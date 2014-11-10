@@ -4,7 +4,7 @@ function onOpen(e) {
   ui.createAddonMenu()
       .addItem('Start', 'runRefresh')
       .addToUi();
-  showSidebar();
+  //showSidebar();
 }
 
 function onInstall(e) {
@@ -35,11 +35,16 @@ function runRefresh() {
   tagString = "tag=";
   anchorString = "anchor";
   delimiterString = "|";
+  matchTypeDelimiter = ":";
   anyString = "*";
+  colourCorrect = "#a7f6b2";
+  colourFalse = "#eb5960";
+  colourNear = "#ccff99";
   operationType = { osmtag:1, osmin:2, osmtype:3, osmnear:4 };
+  matchType = { none:0, match:1, number:2, hrstreetname:3 };
   //elementType = { node:1, way:2, relation:3 };
   
-  fieldTypes = recognizeFieldTypes();
+  fieldTypes = recognizeFieldTypes(OutsideSheet);
   rn = OutsideSheet.getLastRow()-numberOfHeaderRows; //Row number za outside array
   OutsideRange = OutsideSheet.getRange(numberOfHeaderRows+1, 1, rn, cn);
 
@@ -78,71 +83,77 @@ function continueRefresh() {
 
 }
 
-function recognizeFieldTypes() {
+function recognizeFieldTypes(sheet) {
 
-  var operationArray = OutsideSheet.getRange(2, 1, 3, OutsideSheet.getLastColumn()).getValues();
-  //sheetDebug.appendRow([operationArray.length,operationArray[0].length]);
+  var operationArray = sheet.getRange(2, 1, 3, sheet.getLastColumn()).getValues();
   var fieldTypes = new Array();
   for (i = 0; i < operationArray[0].length + 1; ++i) {
-    //sheetDebug.appendRow(["i=",i]);
+  
     var myFieldType = new Object();
     fieldTypes.push(myFieldType);
-    if (operationArray[0][i] != undefined && operationArray[0][i].indexOf(tagString) == 0){
-      //sheetDebug.appendRow([tagString]);
-      myFieldType.key = operationArray[0][i].substr(tagString.length, operationArray[0][i].length);
-      //sheetDebug.appendRow([myFieldType.key]);
-      if(operationArray[2][i].indexOf(inString) > -1){
-        //sheetDebug.appendRow([inString]);
-        myFieldType.operationType = operationType.osmin;
-      } else if (operationArray[2][i].indexOf(osmString) > -1){
-        //sheetDebug.appendRow([osmString]);
-        myFieldType.operationType = operationType.osmtag;
-      }
-      if (operationArray[1][i] === anyString){
-        //sheetDebug.appendRow(["*"]);
-        myFieldType.anyValue = true;
-      } else {
-        myFieldType.anyValue = false;
-        myFieldType.value = operationArray[1][i].split(delimiterString);
-        //sheetDebug.appendRow([myFieldType.value.toString()]);
-      }
-      myFieldType.mandatoryCompare = operationArray[2][i].indexOf(anchorString) > -1 ? true : false;
-      //sheetDebug.appendRow(["mandatoryCompare",myFieldType.mandatoryCompare]);
-      myFieldType.mandatoryOSM = operationArray[2][i].indexOf(osmString) > -1 ? true : false;
-      //sheetDebug.appendRow(["mandatoryOSM",myFieldType.mandatoryOSM]);
-      myFieldType.compare = operationArray[2][i].indexOf(matchString) > -1 ? true : false;
-      ////sheetDebug.appendRow(["compare",myFieldType.compare]);
+    var keyCell = operationArray[0][i];
+    var valueCell = operationArray[1][i];
+    var operationCell = operationArray[2][i];
+
+    if (keyCell != undefined && keyCell.indexOf(tagString) == 0 || keyCell === typeString){
+    //init myFieldType
+      myFieldType.mandatoryOSM = false;
+      myFieldType.mandatoryCompare = false;
+      myFieldType.compare = matchType.none;
+      var operationValues = operationCell.split(delimiterString);
+      for (j=0;j<operationValues.length;j++){
       
-    } else if (operationArray[0][i] != undefined && operationArray[0][i] === typeString) {
-      //sheetDebug.appendRow([typeString]);
+        switch (operationValues[j].split(matchTypeDelimiter)[0])
+        {
+          case inString:
+            myFieldType.operationType = operationType.osmin;
+            break;
+          case osmString:
+            if(myFieldType.operationType != operationType.osmin){
+              myFieldType.operationType = operationType.osmtag;
+            }
+            break;
+          case anchorString:
+            myFieldType.mandatoryCompare = true;
+            myFieldType.compare = getMatchType(operationValues[j]);
+            break;
+          case osmString:
+            myFieldType.mandatoryOSM = true;
+            break;
+          case matchString:
+            myFieldType.compare = getMatchType(operationValues[j]);
+            break;
+        }
+      }
+    }
+    
+    if (keyCell != undefined && keyCell.indexOf(tagString) == 0){
+      myFieldType.key = keyCell.substr(tagString.length, keyCell.length);
+     if (valueCell === anyString){
+          myFieldType.anyValue = true;
+        } else {
+          myFieldType.anyValue = false;
+          if (typeof valueCell === 'string'){
+            myFieldType.value = valueCell.split(delimiterString);
+          } else if (typeof valueCell === 'number'){
+            myFieldType.value = new Array();
+            myFieldType.value.push(valueCell);
+          }
+        }
+    } else if (keyCell != undefined && keyCell === typeString) {
       myFieldType.operationType = operationType.osmtype;
-      myFieldType.elementType = operationArray[1][i].split(delimiterString);
-      myFieldType.compare = operationArray[2][i].indexOf(matchString) > -1 ? true : false;
-      //sheetDebug.appendRow(["elementType",myFieldType.elementType[0]]);
-    } else if (operationArray[0][i] != undefined && operationArray[0][i] === nearString) {
+      myFieldType.elementType = valueCell.split(delimiterString);
+    } else if (keyCell != undefined && keyCell === nearString) {
       myFieldType.operationType = operationType.osmnear;
-      myFieldType.distance = parseFloat(operationArray[1][i]);
+      myFieldType.distance = parseFloat(valueCell);
     } else {
       cn = i;
-      //sheetDebug.appendRow(["pop",cn]);
+
       fieldTypes.pop();
       break;
     }
   }
-  /*var fieldValues = new Array();
 
-  for (i = 0; i < cn; ++i) {
-    if (values[i].indexOf(haskvString) == 0 || values[i].indexOf(tagString) == 0) {
-      fieldValues.push(values[i].slice(values[i].indexOf("=") + 1, values[i].length));
-    } else if (values[i].indexOf(intagString) == 0) {
-      fieldValues.push(areaString.concat(values[i].slice(values[i].indexOf("=") + 1, values[i].length)));
-    } else if (values[i] === typeString) {
-      fieldValues.push(typeString.concat("$"));
-    }
-  }*/
-
-  //sheet.appendRow([fieldValues.toString()]);
-  //sheetDebug.appendRow(["gotono!"]);
   return fieldTypes;
 }
 
@@ -187,35 +198,22 @@ function createOverpassQuery(fieldTypes) {
     oquerry = oquerry.concat(oquerryTypes[i].toString());
     oquerry = oquerry.concat(oquerryTags);
   }
-  //sheetDebug.appendRow(["ovo je oquerry",oquerry]);
   //dio o areama u kojima se nešto nalazi
   
-  //sheetDebug.appendRow([oquerryAreas.length, oquerryAreas[0].values.length]);
   for (i = 0; i < oquerryAreas.length; ++i) {
     for (j = 0; j < oquerryAreas[i].values.length; ++j) {
-      //sheetDebug.appendRow([oquerryAreas[i].key]);
-      //sheetDebug.appendRow([oquerryAreas[i].values[j]]);
       var areaQueryPart = "area[\"".concat(oquerryAreas[i].key, "\"=\"",
         oquerryAreas[i].values[j], "\"]->.a;")
-        sheetDebug.appendRow([areaQueryPart]);
+        //sheetDebug.appendRow([areaQueryPart]);
       var myQuery = new queryObject(oquerryUrl.concat(encodeURIComponent(
         oquerryHeader.concat(areaQueryPart,"(",oquerry.replace("way[", "way(area.a)[").replace("node[", "node(area.a)["), ");out ids tags center;"))),
         oquerryAreas[i].key, oquerryAreas[i].values[j]);
         sheetDebug.appendRow([oquerryHeader.concat("(",oquerry.replace("way[", "way(area.a)[").replace("node[", "node(area.a)["), ");out ids tags center;")]);
-         //var myQuery = new queryObject(oquerryUrl.concat(encodeURIComponent(
-        //oquerryHeader.concat("area[\"", oquerryAreas[i].key, "\"=\"",
-        //oquerryAreas[i].values[j], "\"];(",
-        //oquerry.replace("area", "area(area)").replace("way[", "way(area)[").replace("node", "node(area)"), ");out body qt;"))),
-        //oquerryAreas[i].key, oquerryAreas[i].values[j]);
-      //sheetDebug.appendRow([myQuery.queryString]);
-      /*myQuery.queryString=oquerryUrl.concat(encodeURIComponent(oquerryHeader.concat("area[\"",oquerryAreaKey,"\"=\"",oquerryAreaValues[i].toString(),"\"];(",oquerry.replace("node","node(area)").replace("way","way(area)"),");out body qt;")));
-      myQuery.areaTagKey=oquerryAreaKey;
-      myQuery.areaTagValue=oquerryAreaValues[i].toString();*/
+
       oquerrys.push( myQuery);
     }
   }
 
-  //}
   //next line writes overpass querys into debug sheet
   for (i=0;i<oquerrys.length;i++){sheetDebug.appendRow([oquerrys[i].queryString,oquerrys[i].areaTagKey,oquerrys[i].areaTagValue]);}
 

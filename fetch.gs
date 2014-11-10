@@ -28,7 +28,7 @@ function fetchData(queryArray) {
 function fetchIndividualQuery(querry) {
   var response = UrlFetchApp.fetch(querry.queryString);
   var obj = JSON.parse(response.getContentText());
-  //sheetDebug.appendRow(["obj ima ovolko rowowa", obj.elements.length]);
+  sheetDebug.appendRow(["obj ima ovolko rowowa", obj.elements.length]);
   return obj;
 }
 
