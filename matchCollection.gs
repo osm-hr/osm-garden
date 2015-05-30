@@ -43,6 +43,8 @@ function matchData(data, osm, mt, parameter) {
       
       if (data.toLowerCase() === osm.toLowerCase().replace("ulica", "ul.")) return true;
       
+      if (data.toLowerCase() === osm.toLowerCase().replace(" cesta", "")) return true;
+      
       if (data.toLowerCase() === osm.toLowerCase().replace("aleja", "al.")) return true;
       
     }

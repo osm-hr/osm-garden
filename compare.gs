@@ -1,200 +1,439 @@
-function compareData(OSMData) {
-  //sheetDebug.appendRow(["Došli u compare"]);
-  var mandatoryColumns = new Array();
-  var coordinatesColumn;
-  var dataOutsideData = OutsideRange.getValues();
-  var colorOSMData = new Array(OSMData.length);
-  var latlongMatching = false;
-  var matchArray = new Array();
-  var distance;
+function Comparer(fieldTypes, metaFieldTypes) {
+  var that = this;
+  this.ft = fieldTypes;
+  this.mft = metaFieldTypes;
+  this.newValue = new Array();
+  this.newColour = new Array();
+  this.oldColour = new Array();
+  this.diffValue = new Array();
+  this.diffColour = new Array();
+  met = { oldEl:0, newEl:1 };//MatchElementType
+  saet = { valueEl:0, orderEl:1, coordEl:2 };//sortedArrayElementType
 
-  for (i = 0; i < fieldTypes.length; ++i) {
-    if (fieldTypes[i].mandatoryCompare) {
+  var mandatoryColumns = new Array();
+  for (var i = 0; i < this.ft.length; ++i) {
+    if (this.ft[i].mandatoryCompare) {
       mandatoryColumns.push(i);
     }
   }
 
-  for (i = 0; i < fieldTypes.length; ++i) {
-    if (fieldTypes[i].operationType == operationType.osmnear) {
+  var latlongMatching = false;
+  for (var i = 0; i < this.ft.length; ++i) {
+    if (this.ft[i].operationType == operationType.osmnear) {
       latlongMatching = true;
-      //sheetDebug.appendRow(["latlongMatching = true"]);
-      coordinatesColumn = i;
-      distance = fieldTypes[i].distance;
+      var coordinatesColumn = i;
+      var distance = fieldTypes[i].distance;
       break;
     }
   }
-
-  //Sort lists
-  var sortString;
-  var sortNumber;
-  var outsideArray = new Array();
-  var OSMArray = new Array();
-  var distanceOutsideArray = new Array();
-  var distanceOSMArray = new Array();
-
-  if (latlongMatching) {
-    for (i = 0; i < dataOutsideData.length; ++i) {
-      sortNumber = getDistanceFromLatLonInKm(0, 0, parseFloat(dataOutsideData[i][coordinatesColumn].split(";")[0]),
-        parseFloat(dataOutsideData[i][coordinatesColumn].split(";")[1]));
-      distanceOutsideArray[i] = new Array();
-      distanceOutsideArray[i].push(sortNumber);
-      distanceOutsideArray[i].push(i);
+  for (var i = 0; i < this.mft.length; ++i) {
+    if (this.mft[i] == metaType.latlon) {
+      var metaCoordinatesColumn = i + this.ft.length;
     }
-    distanceOutsideArray.sort(sortFunction);
+  }
 
-    for (i = 0; i < OSMData.length; ++i) {
-      sortNumber = getDistanceFromLatLonInKm(0, 0, parseFloat(OSMData[i][coordinatesColumn].split(";")[0]),
-        parseFloat(OSMData[i][coordinatesColumn].split(";")[1]));
-      distanceOSMArray[i] = new Array();
-      distanceOSMArray[i].push(sortNumber);
-      distanceOSMArray[i].push(i);
+  this.oldSet = new Array();
+  this.newSet = new Array();
+  this.oldnewSet = new Array();
+  var oldRowNumber;
+
+  this.setOldData = function(outsideData) {
+    this.oldSet = outsideData;
+    oldRowNumber = outsideData.length;
+    if (this.oldSet.length > 0 && this.oldSet[0].length == this.ft.length) {
+      return true;
+    } else {
+      return false;
     }
-    distanceOSMArray.sort(sortFunction);
+  };
+  
+  this.setOldNewData = function(outsideData) {
+    this.oldNewSet = outsideData;
+    if (this.oldNewSet.length > 0 && this.oldNewSet[0].length == this.ft.length) {
+      return true;
+    } else {
+      return false;
+    }
+  };
 
+  this.addNewData = function(OSMData) {
+    this.newSet = this.newSet.concat(OSMData);
+    sheetDebug.appendRow(["Sada ima redova:", this.newSet.length]);
+  };
+
+  this.compareData = function() {
+    initContent();
+    var md = sortAndMatchData(this.oldSet, this.newSet, compareType.positive);
+    compareMatched(this.oldSet, this.newSet, md, compareType.positive, this.ft, coordinatesColumn);
+	
+	md = sortAndMatchData(this.oldNewSet, this.newValue, compareType.negative);
+	addNonMatchedData(md, this.ft);
+	compareMatched(this.oldNewSet, this.newValue, md, compareType.negative, this.ft, coordinatesColumn);
+
+  };
+
+  function initContent() {
+    that.newValue = that.newSet.slice();
+    that.newColour = new Array(that.newSet.length);
+    that.oldColour = new Array(that.oldSet.length);
+
+  }
+
+  function sortAndMatchData(os, ns, ct) {
+    var matchData = new Object();
+    if (latlongMatching) {
+      var outsideArray = createArrayForDistanceSorting(os, coordinatesColumn, ct);
+      outsideArray.sort(sortFunction);
+      var OSMArray = createArrayForDistanceSorting(ns, coordinatesColumn, ct);
+      OSMArray.sort(sortFunction);
+      if (ct === compareType.positive) {
+        matchData = matchSortedDistanceArrays(outsideArray, OSMArray, distance);
+      } else if (ct === compareType.negative) {
+        matchData = matchSortedStringArrays(outsideArray, OSMArray);
+      }
+    } else {
+      var outsideArray = createArrayForStringSorting(os, mandatoryColumns);
+      outsideArray.sort(sortFunction);
+      var OSMArray = createArrayForStringSorting(ns, mandatoryColumns);
+      OSMArray.sort(sortFunction);
+      matchData = matchSortedStringArrays(outsideArray, OSMArray);
+    }
+    return matchData;
+  };
+
+  function createArrayForDistanceSorting(arrayForSorting, coordinatesColumn, ct) {
+    var sortNumber;
+    var distanceArray = new Array();
+    for (var i = 0; i < arrayForSorting.length; ++i) {
+      if (ct == compareType.positive) {
+        sortNumber = getDistanceFromLatLonInKm(0, 0, parseFloat(arrayForSorting[i][coordinatesColumn].split(";")[0]),
+          parseFloat(arrayForSorting[i][coordinatesColumn].split(";")[1]));
+      } else if (ct == compareType.negative) {
+        sortNumber = arrayForSorting[i][coordinatesColumn];
+      }
+
+      distanceArray[i] = new Array();
+      distanceArray[i].push(sortNumber);
+      distanceArray[i].push(i);
+      distanceArray[i].push(arrayForSorting[i][coordinatesColumn]);
+    }
+    return distanceArray;
+  }
+
+  function createArrayForStringSorting(arrayForSorting, mandatoryColumns) {
+    var sortNumber;
+    var distanceArray = new Array();
+    for (var i = 0; i < arrayForSorting.length; ++i) {
+      sortNumber = "";
+      for (var j = 0; j < mandatoryColumns.length; ++j) {
+        sortNumber = sortNumber.concat("$$$$$", arrayForSorting[i][mandatoryColumns[j]]);
+      }
+      distanceArray[i] = new Array();
+      distanceArray[i].push(sortNumber);
+      distanceArray[i].push(i);
+    }
+    return distanceArray;
+  }
+
+  function matchSortedDistanceArrays(outsideArray, OSMArray, distance) {
+    var matchArray = new Array();
+    var noMatchOSMArray = new Array();
+    var noMatchOutsideArray = new Array();
     var j = 0;
-    for (i = 0; i < distanceOutsideArray.length; ++i) {
-      while (j < distanceOSMArray.length) {
+    for (var i = 0; i < outsideArray.length; ++i) {
+      while (j < OSMArray.length) {
 
-        if (distanceOutsideArray[i][0] < distanceOSMArray[j][0] - distance) {
-          //sheetDebug.appendRow([i,j,distanceOutsideArray[i][0], distanceOSMArray[j][0], distance,dataOutsideData[distanceOutsideArray[i][1]][coordinatesColumn],OSMData[distanceOSMArray[j][1]][coordinatesColumn],"Udaljenost je prevelika"]);
+        if (outsideArray[i][saet.valueEl] < OSMArray[j][saet.valueEl] - distance) {
+          noMatchOutsideArray.push(outsideArray[i][saet.orderEl]);
           break;
         }
-        if (distanceOutsideArray[i][0] > distanceOSMArray[j][0] + distance) {
-          //sheetDebug.appendRow([i,j,distanceOutsideArray[i][0], distanceOSMArray[j][0], distance,dataOutsideData[distanceOutsideArray[i][1]][coordinatesColumn],OSMData[distanceOSMArray[j][1]][coordinatesColumn],"Udaljenost je premala"]);
+        if (outsideArray[i][saet.valueEl] > OSMArray[j][saet.valueEl] + distance) {
+          noMatchOSMArray.push(OSMArray[j][saet.orderEl]);
           j++;
           continue;
         }
 
-        var distanceBetweenFeatures = getDistanceFromLatLonInKm(parseFloat(dataOutsideData[distanceOutsideArray[i][1]][coordinatesColumn].split(";")[0]),
-          parseFloat(dataOutsideData[distanceOutsideArray[i][1]][coordinatesColumn].split(";")[1]),
-          parseFloat(OSMData[distanceOSMArray[j][1]][coordinatesColumn].split(";")[0]),
-          parseFloat(OSMData[distanceOSMArray[j][1]][coordinatesColumn].split(";")[1]));
+        var distanceBetweenFeatures = getDistanceFromLatLonInKm(
+			parseFloat(outsideArray[i][saet.coordEl].split(";")[0]),
+			parseFloat(outsideArray[i][saet.coordEl].split(";")[1]),
+			parseFloat(OSMArray[j][saet.coordEl].split(";")[0]),
+			parseFloat(OSMArray[j][saet.coordEl].split(";")[1]));
         if (distanceBetweenFeatures < distance) {
 
-          var outsideRow = distanceOutsideArray[i][1];
-          var OSMRow = distanceOSMArray[j][1];
+          var outsideRow = outsideArray[i][saet.orderEl];
+          var OSMRow = OSMArray[j][saet.orderEl];
           matchArray.push([outsideRow, OSMRow, distanceBetweenFeatures]);
 
-        } else { //sheetDebug.appendRow([i,j,distanceOutsideArray[i][0], distanceOSMArray[j][0], distance,dataOutsideData[distanceOutsideArray[i][1]][coordinatesColumn],OSMData[distanceOSMArray[j][1]][coordinatesColumn],"Ali ipak nisu blizu"]);
-          if (distanceOutsideArray[i][0] < distanceOSMArray[j][0]) {
+        } else {
+          if (outsideArray[i][0] < OSMArray[j][0]) {
+            noMatchOutsideArray.push(outsideArray[i][saet.orderEl]);
             break;
           }
-          if (distanceOutsideArray[i][0] > distanceOSMArray[j][0]) {
+          if (outsideArray[i][0] > OSMArray[j][0]) {
+            noMatchOSMArray.push(OSMArray[j][saet.orderEl]);
             j++;
             continue;
           }
 
         }
         j++;
+        break;
       }
     }
 
-  } else {
-
-
-    for (i = 0; i < rn; ++i) {
-      sortString = "";
-      for (j = 0; j < mandatoryColumns.length; ++j) {
-        sortString = sortString.concat("$$$$$", dataOutsideData[i][mandatoryColumns[j]]);
-      }
-      outsideArray[i] = new Array();
-      outsideArray[i].push(sortString);
-      outsideArray[i].push(i);
+    for (var nm = j; nm < OSMArray.length; ++nm) {
+      noMatchOSMArray.push(OSMArray[nm][1]);
     }
-    //sheetDebug.appendRow(["Počeo sort outsideDate"]);
-    outsideArray.sort(sortFunction);
-    //sheetDebug.appendRow(["Završio sort outsideDate"]);
-    for (i = 0; i < OSMData.length; ++i) {
-      sortString = "";
-      for (j = 0; j < mandatoryColumns.length; ++j) {
-        sortString = sortString.concat("$$$$$", OSMData[i][mandatoryColumns[j]]);
-      }
-      OSMArray[i] = new Array();
-      OSMArray[i].push(sortString);
-      OSMArray[i].push(i);
-    }
-    //sheetDebug.appendRow(["Počeo sort OSMDate"]);
-    OSMArray.sort(sortFunction);
-    //sheetDebug.appendRow(["Završio sort OSMDate"]);
-    //
+    return {
+      matched: matchArray,
+      noMatchOutside: noMatchOutsideArray,
+      noMatchOSM: noMatchOSMArray
+    };
+  }
 
+  function matchSortedStringArrays(outsideArray, OSMArray) {
+    var matchArray = new Array();
+    var noMatchOSMArray = new Array();
+    var noMatchOutsideArray = new Array();
     var j = 0;
-    for (i = 0; i < outsideArray.length; ++i) {
+    for (var i = 0; i < outsideArray.length; ++i) {
       while (j < OSMArray.length) {
-        //sheetDebug.appendRow([i,j,dataOutsideData[i][dataOutsideData[i].length-2],OSMData[j][OSMData[j].length-2]]);
-        if (OSMArray[j][0] > outsideArray[i][0]) {
-          //sheetDebug.appendRow(["break"]);
+        if (outsideArray[i][saet.orderEl]=== 6748)
+        {
+          kajjeovo=4;
+        }
+        if (OSMArray[j][saet.valueEl] > outsideArray[i][saet.valueEl]) {
+          noMatchOutsideArray.push(outsideArray[i][saet.orderEl]);
           break;
         }
-        if (OSMArray[j][0] < outsideArray[i][0]) {
-          //sheetDebug.appendRow(["break"]);
+        if (OSMArray[j][saet.valueEl] < outsideArray[i][saet.valueEl]) {
+          noMatchOSMArray.push(OSMArray[j][saet.orderEl]);
           j++;
           continue;
         }
-
-        var outsideRow = outsideArray[i][1];
-        var OSMRow = OSMArray[j][1];
+        var outsideRow = outsideArray[i][saet.orderEl];
+        var OSMRow = OSMArray[j][saet.orderEl];
         matchArray.push([outsideRow, OSMRow]);
-
         j++;
+		break;
       }
     }
-  }
-//  for (i=0;i<matchArray.length;i++){
-//    sheetDebug.appendRow([matchArray[i][0],matchArray[i][1],matchArray[i][2]]);
-//  }
-  
-  for (i = 0; i < matchArray.length; i++) {
-    var outsideRow = matchArray[i][0];
-    var OSMRow = matchArray[i][1];
-    colorOSMData[OSMRow] = new Array();
-    fullOutsideColorArray[outsideRow] = new Array();
-    for (k = 0; k < fieldTypes.length; ++k) {
-      if (fieldTypes[k].operationType == operationType.osmnear) {
-        colorOSMData[OSMRow].push(colourNear);
-        fullOutsideColorArray[outsideRow].push(colourNear);
-        sheetDebug.appendRow(["OSMRow",OSMRow,k,matchArray[i][2]]);
-        OSMData[OSMRow][k] = (matchArray[i][2] * 1000).toFixed(1).toString().concat("m");
 
-      } else if (fieldTypes[k].mandatoryCompare || fieldTypes[k].compare != matchType.none) {
-        parameter = fieldTypes[k].compare == matchType.number ? fieldTypes[k].value[0] : 0;
-        var matchResult = matchArrayData(dataOutsideData[outsideRow][k].toString().split("|"), OSMData[OSMRow][k], fieldTypes[k].compare, parameter);
-        if (matchResult === true) {
-          colorOSMData[OSMRow].push(colourCorrect);
-          fullOutsideColorArray[outsideRow].push(colourCorrect);
-        } else if (matchResult === false) {
-          colorOSMData[OSMRow].push(colourFalse);
-          fullOutsideColorArray[outsideRow].push(colourFalse);
-          //if (OSMData[OSMRow][k].toString() === "n/a") {}
-        } else if (typeof matchResult === 'number') {
-          colorOSMData[OSMRow].push(colourNear);
-          fullOutsideColorArray[outsideRow].push(colourNear);
-          OSMData[OSMRow][k] = matchResult;
+    for (var nm = j; nm < OSMArray.length; ++nm) {
+      noMatchOSMArray.push(OSMArray[nm][saet.orderEl]);
+    }
+	for (var nm = i; nm < outsideArray.length; ++nm) {
+      noMatchOutsideArray.push(outsideArray[nm][saet.orderEl]);
+    }
+	
+	qualityControl(outsideArray, OSMArray, matchArray, noMatchOutsideArray, noMatchOSMArray);
+    return {
+      matched: matchArray,
+      noMatchOutside: noMatchOutsideArray,
+      noMatchOSM: noMatchOSMArray
+    };
+  }
+
+  function compareMatched(oldSet, newSet, matchData, ct, fieldTypes, coordinatesColumn) {
+    for (var i = 0; i < matchData.matched.length; i++) {
+      var outsideRow = matchData.matched[i][met.oldEl];
+      var OSMRow = matchData.matched[i][met.newEl];
+
+      if (ct === compareType.positive) {
+        var insertOSMRow = OSMRow;
+      } else if (ct === compareType.negative) {
+        var insertOSMRow = that.diffValue.length;
+        that.diffValue[insertOSMRow] = oldSet[matchData.matched[i][met.oldEl]].slice();
+        //negativeCompareMatch gets true if any of the fields is not the same as before
+        var negativeCompareMatch = false;
+      }
+      
+      if (ct === compareType.positive) {
+        that.oldColour[outsideRow] = new Array();
+		that.newColour[insertOSMRow] = new Array();
+      }else if (ct === compareType.negative) {
+		that.diffColour[insertOSMRow] = new Array();
+	  }
+      for (var k = 0; k < fieldTypes.length; ++k) {
+        if (fieldTypes[k].operationType == operationType.osmnear) {
+
+          if (ct === compareType.positive) {
+            that.newColour[insertOSMRow][k] = colourNear;
+            that.newValue[insertOSMRow][k] = (matchData.matched[i][2] * 1000).toFixed(1).toString().concat("m");
+            that.oldColour[outsideRow].push(colourNear);
+          } else if (ct === compareType.negative) {
+            that.diffColour[insertOSMRow][k] = colourNeutral;
+            that.diffValue[insertOSMRow][k] = oldSet[outsideRow][coordinatesColumn];
+          }
+        } else if (fieldTypes[k].mandatoryCompare || fieldTypes[k].compare != matchType.none) {
+          var parameter = fieldTypes[k].compare == matchType.number ? fieldTypes[k].value[0] : 0;
+          var matchResult = matchArrayData(oldSet[outsideRow][k].toString().split("|"), newSet[OSMRow][k], fieldTypes[k].compare, parameter);
+          if (matchResult === true) {
+            if (ct === compareType.positive) {
+              that.newColour[insertOSMRow][k] = colourCorrect;
+              that.oldColour[outsideRow].push(colourCorrect);
+            } else if (ct === compareType.negative) {
+              that.diffColour[insertOSMRow][k] = colourNeutral;
+            }
+          } else if (matchResult === false) {
+            if (ct === compareType.positive) {
+              that.newColour[insertOSMRow][k] = colourFalse;
+              that.oldColour[outsideRow].push(colourFalse);
+            } else if (ct === compareType.negative) {
+              that.diffColour[insertOSMRow][k] = colourFalse;
+              negativeCompareMatch = true;
+            }
+          } else if (typeof matchResult === 'number') {
+            if (ct === compareType.positive) {
+              that.newColour[insertOSMRow][k] = colourNear;
+              that.oldColour[outsideRow].push(colourNear);
+			  that.newValue[insertOSMRow][k] = matchResult;
+            } else if (ct === compareType.negative) {
+              that.diffColour[insertOSMRow][k] = colourNeutral;
+			  that.diffValue[insertOSMRow][k] = matchResult;
+            }
+          } else {
+            if (ct === compareType.positive) {
+              that.oldColour[outsideRow].push('#000000');
+			  that.newColour[insertOSMRow][k] = '#000000';
+            } else if (ct === compareType.negative) {
+              that.diffColour[insertOSMRow][k] = '#000000';
+            }
+          }
+        } else {
+          
+          if (ct === compareType.positive) {
+            that.oldColour[outsideRow].push(colourNeutral);
+			that.newColour[insertOSMRow][k] = colourNeutral;
+          } else if (ct === compareType.negative) {
+              that.diffColour[insertOSMRow][k] = colourNeutral;
+            }
         }
-      } else {
-        colorOSMData[OSMRow].push('#ffffff');
-        fullOutsideColorArray[outsideRow].push('#ffffff');
       }
+
+      if (latlongMatching === true) {
+        for (var k = fieldTypes.length; k < fieldTypes.length + metaFieldTypes.length; ++k) {
+          if (newSet[OSMRow][k] === "latlong") {
+		  if (ct === compareType.positive) {
+            that.newValue[insertOSMRow][k] = oldSet[outsideRow][coordinatesColumn];
+          } else if (ct === compareType.negative) {
+              that.diffValue[insertOSMRow][k] = oldSet[outsideRow][coordinatesColumn];
+            }
+          }
+        }
+      }
+
+      if (ct === compareType.negative && negativeCompareMatch == false) {
+        that.diffValue.pop();
+        that.diffColour.pop();
+      }
+
+
+    }
+    if (ct === compareType.positive) {
+	//Ovo bi se moglo zamjeniti petljom koja ide po nonMatched
+      for (var i = 0; i < that.newColour.length; i++) {
+        if (that.newColour[i] === undefined) {
+          that.newColour[i] = new Array();
+          for (var k = 0; k < fieldTypes.length; ++k) {
+            that.newColour[i].push(colourFalse);
+          }
+        }
+      }
+	  for (var i = 0; i < matchData.noMatchOutside.length; ++i)
+	  {
+		if (that.oldColour[i] === undefined)
+		{
+			that.oldColour[matchData.noMatchOutside[i]] = new Array();
+			for (var k = 0; k < fieldTypes.length; ++k) {
+				that.oldColour[matchData.noMatchOutside[i]].push(colourFalse);
+			}
+		}
+	  }
+	  //Provjera zbog nesavršenosti sustava
+	  for (var i = 0; i < that.oldColour.length; ++i)
+	  {
+	  if (that.oldColour[i] === undefined)
+		{
+			that.oldColour[i] = new Array();
+			for (var k = 0; k < fieldTypes.length; ++k) {
+				that.oldColour[i].push("#ff9999");
+			}
+		}
+	  }
     }
   }
 
-  for (i = 0; i < colorOSMData.length; i++) {
-    if (colorOSMData[i] === undefined) {
-      colorOSMData[i] = new Array();
-
-      for (k = 0; k < cn; ++k) {
-        colorOSMData[i].push(colourFalse);
-      }
+  function addNonMatchedData(md, ft) {
+    for (var u = 0; u < md.noMatchOutside.length; ++u) {
+      that.diffValue[u] = that.oldSet[md.noMatchOutside[u]].slice();
+      that.diffColour[u] = new Array();
+      while (that.diffColour[u].length < ft.length)
+        that.diffColour[u].push(colourFalse);
     }
-  }
-  return colorOSMData;
-}
+    for (var v = 0; v < md.noMatchOSM.length; ++v) {
+      that.diffValue[v] = that.newSet[md.noMatchOSM[v]].slice();
+      that.diffColour[v] = new Array();
+      while (that.diffColour[v].length < ft.length)
+        that.diffColour[v].push(colourCorrect);
+    }
+  };
 
-
-function sortFunction(a, b) {
-  if (a[0] === b[0]) {
-    return 0;
-  } else {
-    return (a[0] < b[0]) ? -1 : 1;
+  function sortFunction(a, b) {
+    if (a[0] === b[0]) {
+      return 0;
+    } else {
+      return (a[0] < b[0]) ? -1 : 1;
+    }
+  };
+  
+  function qualityControl(oldArray, newArray, matchArray, noMatchOldArray, noMatchNewArray){
+  
+	for (var i = 0; i < matchArray.length; ++i)
+	{
+		var nonMatchedOld = noMatchOldArray.indexOf(matchArray[i][met.oldEl]);
+		if (nonMatchedOld >= 0)
+		{
+			sheetDebug.appendRow(["Isti stari element u matchanim:".concat(i, " i nematchanim", nonMatchedOld)]);
+		}
+		var nonMatchedNew = noMatchOldArray.indexOf(matchArray[i][met.oldEl]);
+		if (nonMatchedNew >= 0)
+		{
+			sheetDebug.appendRow(["Isti novi element u matchanim:".concat(i, " i nematchanim", nonMatchedNew)]);
+		}
+	}
+	
+	var oldMatchedArray = new Array();
+	var newMatchedArray = new Array();
+	for (var i = 0; i < matchArray.length; ++i)
+	{
+		oldMatchedArray.push(matchArray[i][met.oldEl]);
+		newMatchedArray.push(matchArray[i][met.newEl]);
+	}
+	
+	for (var i = 0; i < oldArray.length; ++i)
+	{
+		var matchedOld = oldMatchedArray.indexOf(oldArray[i][saet.orderEl]);
+		var nonMatchedOld = noMatchOldArray.indexOf(oldArray[i][saet.orderEl]);
+		if (matchedOld < 0 && nonMatchedOld < 0)
+		{
+			sheetDebug.appendRow(["Starog elementa:".concat(i, " nema ni u matchanim ni u nematchanim")]);
+		}
+	}
+	for (var i = 0; i < newArray.length; ++i)
+	{
+		var matchedNew = newMatchedArray.indexOf(newArray[i][saet.orderEl]);
+		var nonMatchedNew = noMatchNewArray.indexOf(newArray[i][saet.orderEl]);
+		if (matchedNew < 0 && nonMatchedNew < 0)
+		{
+			sheetDebug.appendRow(["Novog elementa:".concat(i, " nema ni u matchanim ni u nematchanim")]);
+		}
+	}
+	sheetDebug.appendRow(["Broj svih starih", oldArray.length]);
+    sheetDebug.appendRow(["Broj svih novih", newArray.length]);
+    sheetDebug.appendRow(["Broj spojenih", matchArray.length]);
+    sheetDebug.appendRow(["Broj nespojenih starih", noMatchOldArray.length]);
+    sheetDebug.appendRow(["Broj nespojenih novih", noMatchNewArray.length]);
+    sheetDebug.appendRow(["----------------------"]);
   }
 }
