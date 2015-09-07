@@ -1,6 +1,6 @@
 function Comparer(fieldTypes, metaFieldTypes) {
   var that = this;
-  this.ft = fieldTypes;
+  this.ft = fieldTypes; //definition found in the first few rows of the Data sheet
   this.mft = metaFieldTypes;
   this.newValue = new Array();
   this.newColour = new Array();
@@ -32,8 +32,8 @@ function Comparer(fieldTypes, metaFieldTypes) {
     }
   }
 
-  this.oldSet = new Array();
-  this.newSet = new Array();
+  this.oldSet = new Array(); //when comparing, this is the Data sheet, when diffing, it is the old OSM sheet
+  this.newSet = new Array(); //when comparing, this is the OSM sheet, when diffing, it is the just downloaded OSM data
   this.oldnewSet = new Array();
   var oldRowNumber;
 
@@ -57,7 +57,7 @@ function Comparer(fieldTypes, metaFieldTypes) {
   };
 
   this.addNewData = function(OSMData) {
-    this.newSet = this.newSet.concat(OSMData);
+    this.newSet = this.newSet.concat(OSMData); //It is concated because sometimes we have multiple Overpass queries
     sheetDebug.appendRow(["Sada ima redova:", this.newSet.length]);
   };
 
@@ -73,7 +73,7 @@ function Comparer(fieldTypes, metaFieldTypes) {
   };
 
   function initContent() {
-    that.newValue = that.newSet.slice();
+    that.newValue = that.newSet.slice(); //Slice without arguments copies the array
     that.newColour = new Array(that.newSet.length);
     that.oldColour = new Array(that.oldSet.length);
 
@@ -267,6 +267,9 @@ function Comparer(fieldTypes, metaFieldTypes) {
           }
         } else if (fieldTypes[k].mandatoryCompare || fieldTypes[k].compare != matchType.none) {
           var parameter = fieldTypes[k].compare == matchType.number ? fieldTypes[k].value[0] : 0;
+          if(i==119){
+            var thk=232;
+          }
           var matchResult = matchArrayData(oldSet[outsideRow][k].toString().split("|"), newSet[OSMRow][k], fieldTypes[k].compare, parameter);
           if (matchResult === true) {
             if (ct === compareType.positive) {
@@ -366,7 +369,7 @@ function Comparer(fieldTypes, metaFieldTypes) {
 
   function addNonMatchedData(md, ft) {
     for (var u = 0; u < md.noMatchOutside.length; ++u) {
-      that.diffValue[u] = that.oldSet[md.noMatchOutside[u]].slice();
+      that.diffValue[u] = that.oldNewSet[md.noMatchOutside[u]].slice();
       that.diffColour[u] = new Array();
       while (that.diffColour[u].length < ft.length)
         that.diffColour[u].push(colourFalse);

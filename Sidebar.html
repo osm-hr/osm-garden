@@ -1,258 +1,582 @@
-<link rel="stylesheet" href="https://ssl.gstatic.com/docs/script/css/add-ons.css">
-<!-- The CSS package above applies Google styling to buttons and other elements. -->
-
-<style>
-.branding-below {
-  bottom: 56px;
-  top: 0;
-}
-
-.branding-text {
-  left: 7px;
-  position: relative;
-  top: 3px;
-}
-
-.col-contain {
-  overflow: hidden;
-}
-
-.col-one {
-  float: left;
-  width: 50%;
-}
-
-.logo {
-  vertical-align: middle;
-}
-
-.radio-spacer {
-  height: 20px;
-}
-
-.width-100 {
-  width: 100%;
-}
-</style>
-<div id="accordion">
-  <h3>Upisivanje upita</h3>
-  <div>
-    <p>
-    Mauris mauris ante, blandit et, ultrices a, suscipit eget, quam. Integer
-    ut neque. Vivamus nisi metus, molestie vel, gravida in, condimentum sit
-    amet, nunc. Nam a nibh. Donec suscipit eros. Nam mi. Proin viverra leo ut
-    odio. Curabitur malesuada. Vestibulum a velit eu ante scelerisque vulputate.
-    </p>
-  </div>
-  <h3>Pokretanje upita</h3>
-  <div>
-    <p>
-    Sed non urna. Donec et ante. Phasellus eu ligula. Vestibulum sit amet
-    purus. Vivamus hendrerit, dolor at aliquet laoreet, mauris turpis porttitor
-    velit, faucibus interdum tellus libero ac justo. Vivamus non quam. In
-    suscipit faucibus urna.
-    </p>
-  </div>
-  <h3>Rezultati</h3>
-  <div>
-    <p>
-    Nam enim risus, molestie et, porta ac, aliquam ac, risus. Quisque lobortis.
-    Phasellus pellentesque purus in massa. Aenean in pede. Phasellus ac libero
-    ac tellus pellentesque semper. Sed ac felis. Sed commodo, magna quis
-    lacinia ornare, quam ante aliquam nisi, eu iaculis leo purus venenatis dui.
-    </p>
-    <ul>
-      <li>List item one</li>
-      <li>List item two</li>
-      <li>List item three</li>
-    </ul>
-  </div>
-  <h3>Pomoć</h3>
-  <div>
-    <p>
-    Cras dictum. Pellentesque habitant morbi tristique senectus et netus
-    et malesuada fames ac turpis egestas. Vestibulum ante ipsum primis in
-    faucibus orci luctus et ultrices posuere cubilia Curae; Aenean lacinia
-    mauris vel est.
-    </p>
-    <p>
-    Suspendisse eu nisl. Nullam ut libero. Integer dignissim consequat lectus.
-    Class aptent taciti sociosqu ad litora torquent per conubia nostra, per
-    inceptos himenaeos.
-    </p>
-  </div>
-</div>
-<link rel="stylesheet" href="//code.jquery.com/ui/1.11.2/themes/smoothness/jquery-ui.css">
-  <script src="//code.jquery.com/jquery-1.10.2.js"></script>
-  <script src="//code.jquery.com/ui/1.11.2/jquery-ui.js"></script>
+<!DOCTYPE html>
+<html>
+<head>
+  <title>OSM Garden Sidebar</title>
+</head>
 <script>
-  $(function() {
-    $( "#accordion" ).accordion();
-  });
-  </script>
-<!--<div class="sidebar branding-below">
-  <form>
-    <div class="block col-contain">
-      <div class="col-one">
-        <b>Selected text</b>
-        <div>
-          <input type="radio" name="origin" id="radio-origin-auto" value="" checked="checked">
-          <label for="radio-origin-auto">Auto-detect</label>
-        </div>
-        <div>
-          <input type="radio" name="origin" id="radio-origin-en" value="en">
-          <label for="radio-origin-en">English</label>
-        </div>
-        <div>
-          <input type="radio" name="origin" id="radio-origin-fr" value="fr">
-          <label for="radio-origin-fr">French</label>
-        </div>
-        <div>
-          <input type="radio" name="origin" id="radio-origin-de" value="de">
-          <label for="radio-origin-de">German</label>
-        </div>
-        <div>
-          <input type="radio" name="origin" id="radio-origin-ja" value="ja">
-          <label for="radio-origin-ja">Japanese</label>
-        </div>
-        <div>
-          <input type="radio" name="origin" id="radio-origin-es" value="es">
-          <label for="radio-origin-es">Spanish</label>
-        </div>
-      </div>
-      <div>
-        <b>Translate into</b>
-        <div class="radio-spacer">
-        </div>
-        <div>
-          <input type="radio" name="dest" id="radio-dest-en" value="en">
-          <label for="radio-dest-en">English</label>
-        </div>
-        <div>
-          <input type="radio" name="dest" id="radio-dest-fr" value="fr">
-          <label for="radio-dest-fr">French</label>
-        </div>
-        <div>
-          <input type="radio" name="dest" id="radio-dest-de" value="de">
-          <label for="radio-dest-de">German</label>
-        </div>
-        <div>
-          <input type="radio" name="dest" id="radio-dest-ja" value="ja" checked="checked">
-          <label for="radio-dest-ja">Japanese</label>
-        </div>
-        <div>
-          <input type="radio" name="dest" id="radio-dest-es" value="es">
-          <label for="radio-dest-es">Spanish</label>
-        </div>
-      </div>
-    </div>
+function importColumnDefinitions(fieldTypes) {
+  var cs = document.getElementById("columnSelect");
+  ft = [];
+  for (var j = 0; j < fieldTypes.length; j++) {
+    ft[j] = fieldTypes[j];
+  }
 
-    <div class="block form-group">
-      <label for="translated-text"><b>Translation</b></label>
-      <textarea class="width-100" id="translated-text" rows="10"></textarea>
-    </div>
+  cs.innerHTML = "";
+  for (var i = 0; i < ft.length; i++) {
+    var option = document.createElement('option');
+    option.text = ft[i].name;
+    option.value = i;
+    cs.appendChild(option);
 
-    <div class="block">
-      <input type="checkbox" id="save-prefs">
-      <label for="save-prefs">Use these languages by default</label>
-    </div>
+  }
+}
 
-   <div class="block" id="button-bar">
-      <button class="blue" id="run-translation">Translate</button>
-      <button id="insert-text">Insert</button>
-    </div>
-  </form>
-</div>
+function toggleTrVisibility(trElement) {
+  var trKeyValue = document.getElementById("trKeyValue");
+  var trElementTypes = document.getElementById("trElementTypes");
+  var trCoordinates = document.getElementById("trCoordinates");
+  switch (trElement) {
+    case "tag":
+      trKeyValue.style.display = "";
+      trElementTypes.style.display = "none";
+      trCoordinates.style.display = "none";
+      break;
+    case "type":
+      trKeyValue.style.display = "none";
+      trElementTypes.style.display = "";
+      trCoordinates.style.display = "none";
+      break;
+    case "near":
+      trKeyValue.style.display = "none";
+      trElementTypes.style.display = "none";
+      trCoordinates.style.display = "";
+      break;
+    case "in":
+      trKeyValue.style.display = "";
+      trElementTypes.style.display = "none";
+      trCoordinates.style.display = "none";
+      break;
+    default:
+      trKeyValue.style.display = "none;";
+      trElementTypes.style.display = "none";
+      trCoordinates.style.display = "none";
+  }
+}
 
-<div class="sidebar bottom">
-  <img alt="Add-on logo" class="logo" width="27" height="27"
-      src="https://googledrive.com/host/0B0G1UdyJGrY6XzdjQWF4a1JYY1k/translate-logo-small.png">
-  <span class="gray branding-text">Translate sample by Google</span>
-</div>
+function addNewColumn() {
+  var cs = document.getElementById("columnSelect");
+  var option = document.createElement('option');
+  var redniBroj = cs.options.length + 1;
+  var novoIme = "Kolona " + redniBroj;
+  option.text = novoIme;
+  option.value = parseInt(redniBroj, 10) - 1;
+  cs.appendChild(option);
 
-<script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js">
+  var newDefinition = {};
+  newDefinition.name = novoIme;
+  ft.push(newDefinition);
+
+
+}
+
+var ft = [];
+var operationType = {
+  osmtag: 1,
+  osmin: 2,
+  osmtype: 3,
+  osmnear: 4
+};
+
+function changeEventHandler(event) {
+  var i = event.target.value;
+  var radioTag = document.getElementById("radioTag");
+  var radioNear = document.getElementById("radioNear");
+  var radioIn = document.getElementById("radioIn");
+  var radioType = document.getElementById("radioType");
+  var columnTagKey = document.getElementById("columnTagKey");
+  var columnTagValueUnCheck = document.getElementById("columnTagValueUnCheck");
+  var columnTagValueCheck = document.getElementById("columnTagValueCheck");
+  var mtOSMTypeNode = document.getElementById("mtOSMTypeNode");
+  var mtOSMTypeWay = document.getElementById("mtOSMTypeWay");
+  var mtOSMTypeRelation = document.getElementById("mtOSMTypeRelation");
+  var columnName = document.getElementById("columnName");
+  var columnTagValue = document.getElementById("columnTagValue");
+  var columnDistance = document.getElementById("columnDistance");
+  var columnAnchor = document.getElementById("columnAnchor");
+  
+  //alert (JSON.stringify(ft[i]));
+  columnName.value = ft[i].name;
+  if (ft[i].operationType === undefined) {
+    return;
+  }
+
+  columnTagKey.value = ft[i].key;
+
+  if (ft[i].value != undefined) {
+    columnTagValue.value = ft[i].value.join("|");
+  }
+
+  if (ft[i].mandatoryCompare === true) {
+    columnAnchor.checked = true;
+  }
+
+  if (ft[i].anyValue == true) {
+    radioTag.checked = true;
+    toggleTrVisibility('tag');
+    columnTagValueCheck.checked = true;
+    toggleTagValueVisibility();
+    columnAnchor.disabled = true;
+  } else {
+    columnTagValueUnCheck.checked = true;
+    toggleTagValueVisibility();
+  }
+
+  switch (ft[i].operationType) {
+    case operationType.osmtag:
+      radioTag.checked = true;
+      toggleTrVisibility('tag');
+      break;
+    case operationType.osmin:
+      radioIn.checked = true;
+      toggleTrVisibility('in');
+      break;
+    case operationType.osmtype:
+      radioType.checked = true;
+      toggleTrVisibility('type');
+      break;
+    case operationType.osmnear:
+      radioNear.checked = true;
+      toggleTrVisibility('near');
+      columnDistance.value = ft[i].distance * 1000;
+      break;
+    default:
+      break;
+  }
+
+
+  for (var j = 0; j < ft[i].elementType.length; j++) {
+    switch (ft[i].elementType[j]) {
+      case "node":
+        mtOSMTypeNode.checked = true;
+        break;
+      case "way":
+        mtOSMTypeWay.checked = true;
+        break;
+      case "relation":
+        mtOSMTypeRelation.checked = true;
+        break;
+
+    }
+  }
+}
+
+function saveConfiguration() {
+  var cs = document.getElementById("columnSelect");
+  var i = cs.options[cs.selectedIndex].value;
+  var columnName = document.getElementById("columnName");
+  var columnTagValue = document.getElementById("columnTagValue");
+  var columnDistance = document.getElementById("columnDistance");
+  var mtOSMTypeNode = document.getElementById("mtOSMTypeNode");
+  var mtOSMTypeWay = document.getElementById("mtOSMTypeWay");
+  var mtOSMTypeRelation = document.getElementById("mtOSMTypeRelation");
+  var radioTag = document.getElementById("radioTag");
+  var radioNear = document.getElementById("radioNear");
+  var radioIn = document.getElementById("radioIn");
+  var radioType = document.getElementById("radioType");
+  var columnTagKey = document.getElementById("columnTagKey");
+  var columnTagValueUnCheck = document.getElementById("columnTagValueUnCheck");
+  var columnTagValueCheck = document.getElementById("columnTagValueCheck");
+  var columnAnchor = document.getElementById("columnAnchor");
+  var saveConfigurationButton = document.getElementById("saveConfigurationButton");
+
+  saveConfigurationButton.value = languageStrings["SaveButtonProgress"];
+  saveConfigurationButton.disabled = true;
+
+  var ft2 = [];
+  for (var j = 0; j < ft.length; j++) {
+    if (j != i) {
+      ft2.push(ft[j])
+    } else {
+      var fti = {};
+      ft2.push(fti);
+
+      fti.name = columnName.value;
+
+      if (columnAnchor.checked === true) {
+        fti.mandatoryCompare = true;
+      } else {
+        fti.mandatoryCompare = false;
+      }
+      if (radioTag.checked === true) {
+        fti.key = columnTagKey.value;
+        fti.compare = 1; //Should add other types of matching
+        if (columnTagValueCheck.checked === true) {
+          fti.anyValue = true;
+        } else {
+          //alert(columnTagValue.value);
+          fti.value = columnTagValue.value.split("|");
+          fti.mandatoryOSM = true;
+          fti.operationType = operationType.osmtag;
+        }
+      }
+      if (radioNear.checked) {
+        fti.operationType = operationType.osmnear;
+        fti.distance = parseFloat(columnDistance.value) / 1000;
+
+      }
+      if (radioType.checked) {
+        fti.operationType = operationType.osmtype;
+        fti.elementType = [];
+        if (mtOSMTypeNode.checked) {
+          fti.elementType.push("node");
+        }
+        if (mtOSMTypeWay.checked) {
+          fti.elementType.push("way");
+        }
+        if (mtOSMTypeRelation.checked) {
+          fti.elementType.push("relation");
+        }
+      }
+      if (radioIn.checked) {
+        fti.operationType = operationType.osmin;
+        fti.key = columnTagKey.value;
+        fti.value = columnTagValue.value.split("|");
+      }
+
+
+    }
+  }
+
+  google.script.run.withSuccessHandler(saveSuccess).PrintConfiguration(ft2);
+}
+
+function saveSuccess(rezultat) {
+  if (rezultat === true) {
+    google.script.run.withSuccessHandler(importColumnDefinitions).getFieldTypes();
+  }
+  var saveConfigurationButton = document.getElementById("saveConfigurationButton");
+  saveConfigurationButton.value = languageStrings["SaveButton"];
+  saveConfigurationButton.disabled = false;
+}
+
+function toggleTagValueVisibility(){
+        var myTextBox = document.getElementById("columnTagValue");
+        var myCheckBox = document.getElementById("columnTagValueCheck");
+        var myLabel = document.getElementById("columnTagValueLabel");
+        var columnAnchor = document.getElementById("columnAnchor");
+        
+        if (myCheckBox.checked){
+        myTextBox.disabled = true;
+        myTextBox.style.background = "#ddd";
+        myTextBox.setAttribute("class", "gray");
+        myLabel.setAttribute("class", "gray");
+        columnAnchor.disabled=true;
+        } else {
+        myTextBox.disabled = false;
+        myTextBox.style.background = "#fff";
+        myLabel.setAttribute("class", "");
+        columnAnchor.disabled=false;
+        }
+        
+}
+
+var languageStrings;
+
+function setLanguage (gotLanguageStrings){
+var myElement;
+languageStrings = gotLanguageStrings;
+  for (var lanString in languageStrings){
+    var queryString = '[data-l11n="'+lanString+'"]';
+    var queryStringTooltip = '[data-l11n-tooltip="'+lanString+'"]';
+    myElement = document.querySelector(queryString);
+    
+    if (myElement === null){
+      myElement = document.querySelector(queryStringTooltip);
+      if (myElement != null){
+        /*var mydiv = document.createElement('div');
+        mydiv.innerHTML=languageStrings[lanString];*/
+        myElement.title = unescape(languageStrings[lanString]);
+      }
+      continue;
+    }
+
+    switch (myElement.tagName){
+      case "SPAN":
+        myElement.innerHTML = languageStrings[lanString];
+        break;
+      case "LABEL":
+        myElement.innerHTML = languageStrings[lanString];
+        break;
+      case "INPUT":
+        myElement.value = languageStrings[lanString];
+        break;
+    }
+  }
+}
+google.script.run.withSuccessHandler(setLanguage).getTranslations();
+
+if (!String.format) {
+  String.format = function(format) {
+  alert(format);
+    var args = Array.prototype.slice.call(arguments, 1);
+    return format.replace(/{(\d+)}/g, function(match, number) { 
+      return typeof args[number] != 'undefined'
+        ? args[number] 
+        : match
+      ;
+    });
+  };
+}
+      
+window.onload = function(){
+
+  var columnTagValueCheck = document.getElementById("columnTagValueCheck");
+  var columnAnchor = document.getElementById("columnAnchor");
+  columnAnchor.disabled = columnTagValueCheck.checked;
+}
+
+google.script.run.withSuccessHandler(writeOverpassQuery).getOverpassQuery();
+  
+function writeOverpassQuery(oq){
+var overpassArea=document.getElementById("overpassArea");
+  for (var i=0;i<oq.length;i++){
+    overpassArea.innerHTML=oq[i].queryString;
+  }
+}
+
 </script>
+<body onload="myOnloadFunc()">
+<div align="right">
+</div>
+  <div id="accordion">
+    <h3>
+    <span data-l11n="EnterQuery" />
+    </h3>
+
+    <div>
+    <table>
+    <tbody>
+    <tr>
+    <td>
+    <b><span data-l11n="ChooseColumn"/></b>
+      <p><select id="columnSelect" size="8" onchange="changeEventHandler(event);" style="width:100%" ></select><br />
+      <input type="button" id="addColumn" data-l11n="AddColumnButton" onclick="addNewColumn()" style="width:100%"/></p>
+      <p><label for="columnName" data-l11n="ColumnName"></label><br/><input type="text" id="columnName" /></p>
+      </td>
+      </tr>
+      <tr>
+    <td>
+    <b><span data-l11n="ComparisonType" /></b>
+      <br />
+      
+        <input type="radio" name="group1" value="tag" id="radioTag" onclick="toggleTrVisibility('tag')" />
+        <label for="radioTag" data-l11n="RadioTag" data-l11n-tooltip="RadioTagTooltip"></label><br/>
+        <input type="radio" name="group1" value="near" id="radioNear" onclick="toggleTrVisibility('near')" />
+        <label for="radioNear" data-l11n="RadioNear" data-l11n-tooltip="RadioNearTooltip"></label><br/>
+        <input type="radio" name="group1" value="type" id="radioType" onclick="toggleTrVisibility('type')" />
+        <label for="radioType" data-l11n="RadioType" data-l11n-tooltip="RadioTypeTooltip"></label><br/>
+        <input type="radio" name="group1" value="in" id="radioIn" onclick="toggleTrVisibility('in')" />
+        <label for="radioIn" data-l11n="RadioIn" data-l11n-tooltip="RadioInTooltip"></label>
+      </td>
+      </tr>
+      <tr id="trKeyValue" style="display:none">
+      <td>
+      <b><span data-l11n="Tag" /></b>
+      <p><label for="columnTagKey" data-l11n="Key"></label><br/><input type="text" id="columnTagKey" /></p>
+      <p><label for="columnTagValue" data-l11n="Value" id="columnTagValueLabel" data-l11n-tooltip="ValueTooltip" class="gray"></label><br/>
+      <input type="radio" name="group2" id="columnTagValueUnCheck" onclick="toggleTagValueVisibility()"/>
+      <input type="text" id="columnTagValue" style="width:80%" disabled="disabled"/></p>
+      <p><input type="radio" name="group2" id="columnTagValueCheck" onclick="toggleTagValueVisibility()" checked/>
+      <label for="columnTagValueCheck" data-l11n="AnyValue" data-l11n-tooltip="AnyValueTooltip"></label></p>
+      <p>
+      <input type="checkbox" id="columnAnchor"/>
+      <label for="columnAnchor" data-l11n="MandatoryTag" data-l11n-tooltip="MandatoryTagTooltip"></label></p>
+      </td>
+      </tr>
+      <tr id="trElementTypes" style="display:none">
+    <td>
+    <b><span data-l11n="ElementType" /></b>
+      <p>
+      <input type="checkbox" name="columnOSMType" id="mtOSMTypeNode" /><label for="mtOSMTypeNode" data-l11n="Node"></label><br/>
+      <input type="checkbox" name="columnOSMType" id="mtOSMTypeWay" /><label for="mtOSMTypeWay" data-l11n="Way"></label><br/>
+      <input type="checkbox" name="columnOSMType" id="mtOSMTypeRelation" /><label for="mtOSMTypeRelation" data-l11n="Relation"></label> </p>
+      </td>
+      </tr>
+      <tr id="trCoordinates" style="display:none">
+      <td>
+      <b><span data-l11n="Distance" /></b>
+      <p><label for="columnDistance" data-l11n="AllowedDistance"></label><br/><input type="number" id="columnDistance" /></p>
+      </td>
+      </tr>
+      <tr id="trSave">
+      <td>
+      <p><input type="button" id="saveConfigurationButton" onclick="saveConfiguration()" style="width:100%" data-l11n="SaveButton" /></p>
+      </td>
+      </tr>
+      </tbody>
+      </table>
 <script>
-  /**
-   * On document load, assign click handlers to each button and try to load the
-   * user's origin and destination language preferences if previously set.
-   */
-  $(function() {
-    $('#run-translation').click(runTranslation);
-    $('#insert-text').click(insertText);
-    google.script.run.withSuccessHandler(loadPreferences)
-        .withFailureHandler(showError).getPreferences();
-  });
 
-  /**
-   * Callback function that populates the origin and destination selection
-   * boxes with user preferences from the server.
-   *
-   * @param {Object} languagePrefs The saved origin and destination languages.
-   */
-  function loadPreferences(languagePrefs) {
-    $('input:radio[name="origin"]')
-        .filter('[value=' + languagePrefs.originLang + ']')
-        .attr('checked', true);
-    $('input:radio[name="dest"]')
-        .filter('[value=' + languagePrefs.destLang + ']')
-        .attr('checked', true);
-  }
+google.script.run.withSuccessHandler(importColumnDefinitions).getFieldTypes();
+</script>
+</div>
+    <h3><span data-l11n="StartingQuery" /></h3>
 
-  /**
-   * Runs a server-side function to translate the user-selected text and update
-   * the sidebar UI with the resulting translation.
-   */
-  function runTranslation() {
-    this.disabled = true;
-    $('#error').remove();
-    var origin = $('input[name=origin]:checked').val();
-    var dest = $('input[name=dest]:checked').val();
-    var savePrefs = $('#save-prefs').is(':checked');
-    google.script.run
-        .withSuccessHandler(
-          function(translatedText, element) {
-            $('#translated-text').val(translatedText);
-            element.disabled = false;
-          })
-        .withFailureHandler(
-          function(msg, element) {
-            showError(msg, $('#button-bar'));
-            element.disabled = false;
-          })
-        .withUserObject(this)
-        .runTranslation(origin, dest, savePrefs);
-  }
+    <div>
+      <script>
+function runScript() {
+  this.value = languageStrings["RunScriptButtonProgress"];
+  this.disabled=true;
+  google.script.run.withSuccessHandler(runScriptSuccess).runRefresh();
+}
 
-  /**
-   * Runs a server-side function to insert the translated text into the document
-   * at the user's cursor or selection.
-   */
-  function insertText() {
-    this.disabled = true;
-    $('#error').remove();
-    google.script.run
-        .withSuccessHandler(
-          function(returnSuccess, element) {
-            element.disabled = false;
-          })
-        .withFailureHandler(
-          function(msg, element) {
-            showError(msg, $('#button-bar'));
-            element.disabled = false;
-          })
-        .withUserObject(this)
-        .insertText($('#translated-text').val());
-  }
+function runScriptSuccess() {
+  var runScriptButton = document.getElementById("runScriptButton");
+  runScriptButton.value = languageStrings["RunScriptButton"];
+  runScriptButton.disabled=false;
+}
+</script>
+<input id="runScriptButton" onclick="runScript()" type="button" data-l11n="RunScriptButton" />
 
-  /**
-   * Inserts a div that contains an error message after a given element.
-   *
-   * @param msg The error message to display.
-   * @param element The element after which to display the error.
-   */
-  function showError(msg, element) {
-    var div = $('<div id="error" class="error">' + msg + '</div>');
-    $(element).after(div);
+      <p><span data-l11n="QuestionWantScriptRunEvery2Days"/></p>
+
+      <p><input onclick="changeTimeTriggerDays(2)" id="triggerYes" type="button" data-l11n="Yes">
+      <input onclick="changeTimeTriggerDays(0)"  id="triggerNo" type="button" data-l11n="No"></p>
+
+      <p><span id="refreshEverySpan"></span></p>
+      <p><span id="lastRunSpan"></span></p>
+      <script>
+function returnDays(numDays) {
+  var daysString;
+  if (numDays > 0) {
+    daysString = languageStrings["ScriptRunEveryXDays"].replace("{0}",numDays+"");
+    document.getElementById("triggerYes").disabled =true;
+    document.getElementById("triggerNo").disabled =false;
+  } else {
+    daysString = languageStrings["ScriptNotRunAutomatically"];
+    document.getElementById("triggerYes").disabled =false;
+    document.getElementById("triggerNo").disabled =true;
   }
-</script>-->
+  document.getElementById("refreshEverySpan").innerHTML = daysString;
+
+}
+
+function changeTimeTriggerDays(numDays) {
+  google.script.run.withSuccessHandler(returnDays).createTimeDrivenTriggers(numDays);
+}
+
+function returnLastRun(dateDiff){
+var lastRunString = languageStrings["LastTimeScriptRun"].replace("{0}",dateDiff+"");
+lastRunString=lastRunString.replace("{1}",languageStrings["Days"]);
+lastRunString=lastRunString.replace("{2}",languageStrings["Hours"]);
+lastRunString=lastRunString.replace("{3}",languageStrings["Minutes"]);
+
+  document.getElementById("lastRunSpan").innerHTML = lastRunString;
+}
+
+google.script.run.withSuccessHandler(returnLastRun).getTimeLastRunDiff();
+
+google.script.run.withSuccessHandler(returnDays).getTimeDrivenTriggersTime();
+
+
+      </script>
+    </div>
+
+    <h3><span data-l11n="Results" /></h3>
+
+    <div>
+      <p>
+        <input id="emailTextBox" type="text">
+      </p>
+      <p>
+        <input onclick="addToEmailList()" data-l11n="AddToEmailListButton" type="button">
+        <input onclick="removeFromEmailList()" data-l11n="RemoveFromEmailListButton" type="button">
+        <input onclick="google.script.run.withSuccessHandler(allEmails).getAllEmails();" type="button" data-l11n="ReturnAllMails">
+      </p>
+      <p>
+      <textarea id="overpassArea"></textarea>
+      </p>
+      <script>
+function ValidateEmail(inputText)  
+      {
+        
+        var mailformat = '/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/';
+        
+        if(inputText.value.match(mailformat))  
+        {
+          return true;
+        }
+
+      else  
+      {
+        alert(languageStrings["EmailInvalid"]);
+        return false;
+      }
+
+      }
+        
+        function addToEmailList(){
+          var email = document.getElementById("emailTextBox");
+          if (ValidateEmail(email)){
+            google.script.run.withSuccessHandler(emailAddSuccess).addRemoveEmail(email.value, true);
+          }
+        }
+      function removeFromEmailList(){
+        var email = document.getElementById("emailTextBox");
+        google.script.run.withSuccessHandler(emailRemoveSuccess).addRemoveEmail(email.value, false);
+      }
+      function emailAddSuccess(add){
+        if (add){
+          alert(languageStrings["EmailAddSucess"]);
+        }
+        else {
+          alert(languageStrings["EmailAddFail"]);
+        }
+      }
+      function emailRemoveSuccess(removeEmail){
+        if (removeEmail){
+          alert(languageStrings["EmailDeleteSucess"]);
+        }
+        else {
+          alert(languageStrings["EmailDeleteFail"]);
+        }
+      }
+
+      function allEmails(emails){
+        alert(emails);
+      }
+
+      </script>
+    </div>
+
+    <h3><span data-l11n="Help" /></h3>
+
+    <div>
+    <b><span data-l11n="Colours" /></b>
+      <p>
+      <span style="background:#eb5960" data-l11n="HelpRowIsRedTitle"/></p>
+      <p>
+      <span data-l11n="HelpRowIsRedBody"/>
+      </p>
+      <p><span style="background:#a7f6b2" data-l11n="HelpRowIsGreenTitle" /></p>
+      <p>
+      <span data-l11n="HelpRowIsGreenBody"/>
+      </p>
+      <p>
+      <span style="background:#a7f6b2;display:inline" data-l11n="HelpRowIsRedGreenTitleOne" >ph</span>
+      <span style="background:#eb5960;display:inline" data-l11n="HelpRowIsRedGreenTitleTwo" >ph</span>
+      <span style="background:#a7f6b2;display:inline" data-l11n="HelpRowIsRedGreenTitleThree" >ph</span></p>
+      <p>
+      <span data-l11n="HelpRowIsRedGreenBody"/>
+      </p>
+      <p>
+      <span style="background:#ccff99"  data-l11n="HelpRowIsYellowTitle" /></p>
+      <p>
+      <span data-l11n="HelpRowIsYellowBody"/>
+      </p>
+    </div>
+  </div>
+
+  <link href="//code.jquery.com/ui/1.11.2/themes/flick/jquery-ui.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://ssl.gstatic.com/docs/script/css/add-ons1.css">
+  <!-- The CSS package above applies Google styling to buttons and other elements. -->
+  <script src="//code.jquery.com/jquery-1.10.2.js"></script> <script src="//code.jquery.com/ui/1.11.2/jquery-ui.js"></script>
+  <script>
+$(function() {
+    $( "#accordion" ).accordion();
+  }
+);
+  </script>
+  
+</body>
+</html>

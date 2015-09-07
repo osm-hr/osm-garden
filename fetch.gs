@@ -6,21 +6,7 @@ function fetchData(queryArray, outsideData) {
     queryArray[querryArrayCounter].areaTagValue);
   
   compareOSM.addNewData(OSMData);
-  
-//  var compareResult = compareData(OSMData, outsideData, compareType.positive);
-//  for (i = 0;i<compareResult.OSMColour.length;i++){
-//    if (compareResult.OSMValue[i] !== undefined){
-//      fullTableArray.push(compareResult.OSMValue[i]);
-//    }
-//    fullOSMColorArray.push(compareResult.OSMColour[i]);
-//  }
-//  
-//  var diffResult = compareData(compareResult.OSMValue, OldOSMData, compareType.negative);
-//  for (i = 0;i<diffResult.OSMColour.length;i++){
-//    fullDiffArray.push(diffResult.OSMValue[i]);
-//    fullDiffColorArray.push(diffResult.OSMColour[i]);
-//  }
-  
+    
   querryArrayCounter++;
   
   if (querryArrayCounter >= queryArray.length) {
@@ -62,7 +48,11 @@ function addObjectToArray(obj, areaTagKey, areaTagValue) {
           object = obj.elements[j].lat.toString().concat(";", obj.elements[j].lon.toString());
         } else {
         //sheetDebug.appendRow([obj.elements[j].type]);
-          object = obj.elements[j].center.lat.toString().concat(";", obj.elements[j].center.lon.toString());
+          if (obj.elements[j].center === undefined){
+            object = "0;0";
+          } else {
+            object = obj.elements[j].center.lat.toString().concat(";", obj.elements[j].center.lon.toString());
+          }
         }
       } else {
         object = obj.elements[j].tags[fieldTypes[i].key] === undefined ? "" : obj.elements[j].tags[fieldTypes[i].key];

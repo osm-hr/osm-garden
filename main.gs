@@ -2,28 +2,29 @@ function onOpen(e) {
   var ui = SpreadsheetApp.getUi();
   
   ui.createAddonMenu()
-      .addItem('Start', 'runRefresh')
+      .addItem('Pokreni skriptu', 'runRefresh')
       .addToUi();
-  //showSidebar();
+  ui.createAddonMenu()
+      .addItem('Otvori traku', 'showSidebar')
+      .addToUi();
+  showSidebar();
 }
 
 function onInstall(e) {
   onOpen(e);
+  initTriggers();
 }
 
 function showSidebar() {
   var ui = HtmlService.createHtmlOutputFromFile('Sidebar')
-      .setTitle('Rezultati');
+      .setTitle('OSM Garden');
   SpreadsheetApp.getUi().showSidebar(ui);
 }
 
-function runRefresh() {
+function initGlobalVariables(){
+  globalVariablesInitialized = true;
   ss = SpreadsheetApp.getActiveSpreadsheet();
   OutsideSheet = ss.getSheetByName("Data");
-  if (OutsideSheet === null) {
-     ss.insertSheet("Data");
-    return;
-  }
   OSMSheet = ss.getSheetByName("OSM");
   if (OSMSheet === null) OSMSheet = ss.insertSheet("OSM");
   sheetDebug = ss.getSheetByName("Debug");
@@ -31,7 +32,6 @@ function runRefresh() {
   DiffSheet = ss.getSheetByName("Diff");
   if (DiffSheet === null) DiffSheet = ss.insertSheet("Diff");
   numberOfHeaderRows = 4;
-  cn = 0;
   //var arrValues = OutsideSheet.getRange(2,1,1,OutsideSheet.getLastColumn()).getValues();
   //while (typeof arrValues[0].shift() === "string") cn++;
   areaString = "area$";
@@ -55,6 +55,29 @@ function runRefresh() {
   elementType = { node:0, way:1, relation:2 };
   compareType = { positive:0, negative:1 };
   //elementType = { node:1, way:2, relation:3 };
+}
+
+function getOutsideSheet(){
+  ss = SpreadsheetApp.getActiveSpreadsheet();
+  return ss.getSheetByName("Data");
+}
+
+function getDebugSheet(){
+  ss = SpreadsheetApp.getActiveSpreadsheet();
+  return ss.getSheetByName("Debug");
+}
+
+function getNumberOfHeaderRows(){
+  return 4;  
+}
+
+function runRefresh() {
+  initGlobalVariables();
+  if (OutsideSheet === null) {
+     ss.insertSheet("Data");
+    return;
+  }
+  cn = 0;
   
   fieldTypes = recognizeFieldTypes(OutsideSheet);
   metaFieldTypes = [metaType.jump,metaType.user,metaType.changeset,metaType.timestampOSM,metaType.timestampElement];
@@ -77,7 +100,7 @@ function runRefresh() {
   }
   
   //var atticData = getAtticData();
-  queryArray = createOverpassQuery(fieldTypes);
+  queryArray = createOverpassQuery(fieldTypes, false);
   querryArrayCounter = 0;
   fullTableArray = new Array();
   fullOSMColorArray = new Array();
@@ -86,7 +109,24 @@ function runRefresh() {
   compareOSM.setOldData(outsideData);
   compareOSM.setOldNewData(OldOSMData);
   fetchData(queryArray, outsideData);
+  setTimeLastRun();
+  return true;
+}
 
+function setTimeLastRun(){
+  var d = new Date();
+  var timeStamp = d.getTime();
+  var documentProperties = PropertiesService.getDocumentProperties();
+  documentProperties.setProperty("lastRun", timeStamp);
+}
+
+function getTimeLastRunDiff(){
+  var d = new Date();
+  var timeStamp = d.getTime();
+  var documentProperties = PropertiesService.getDocumentProperties();
+  var lastRun = documentProperties.getProperty("lastRun");
+  var lastRunNum =  parseFloat(lastRun);
+  return dhm(timeStamp-lastRunNum);
 }
 
 function continueRefresh() {
@@ -95,9 +135,19 @@ function continueRefresh() {
   
   OSMSheet.clear();
 
-  OSMSheet.getRange(1, 1, compareOSM.newValue.length, compareOSM.newValue[0].length).setValues(compareOSM.newValue);
-
-  OSMSheet.getRange(1, 1, compareOSM.newColour.length, compareOSM.newColour[0].length).setBackgrounds(compareOSM.newColour);
+  var OSMSheetValueRange = OSMSheet.getRange(1, 1, compareOSM.newValue.length, compareOSM.newValue[0].length);
+  //var nf = [];
+  //for (var nfw = 0;nfw<OSMSheetValueRange.getWidth();nfw++){
+  //  for (var nfh = 0;nfh<OSMSheetValueRange.getHeight();nfh++){
+  //    nf[nfh] = [];
+  //    nf[nfh][nfw] = '';
+  //  }
+  //}
+  //OSMSheetValueRange.setNumberFormats(nf);
+  OSMSheetValueRange.setValues(compareOSM.newValue);
+  
+  var OSMSheetColourRange = OSMSheet.getRange(1, 1, compareOSM.newColour.length, compareOSM.newColour[0].length);
+  OSMSheetColourRange.setBackgrounds(compareOSM.newColour);
   
   if (compareOSM.diffValue.length > 0){
     var diffLR = DiffSheet.getLastRow();
@@ -111,7 +161,7 @@ function continueRefresh() {
     DiffSheet.getRange(1, 1, compareOSM.diffValue.length, compareOSM.diffValue[0].length).setValues(compareOSM.diffValue);
     DiffSheet.getRange(1, 1, compareOSM.diffColour.length, compareOSM.diffColour[0].length).setBackgrounds(compareOSM.diffColour);
   }
-  
+  SendDiff(compareOSM.diffValue);
   //popunjavanje redova koji nisu našli para
   
   OutsideSheet.clearFormats();
@@ -126,81 +176,7 @@ function continueRefresh() {
 
 }
 
-function recognizeFieldTypes(sheet) {
-
-  var operationArray = sheet.getRange(2, 1, 3, sheet.getLastColumn()).getValues();
-  var fieldTypes = new Array();
-  for (i = 0; i < operationArray[0].length + 1; ++i) {
-  
-    var myFieldType = new Object();
-    fieldTypes.push(myFieldType);
-    var keyCell = operationArray[0][i];
-    var valueCell = operationArray[1][i];
-    var operationCell = operationArray[2][i];
-
-    if (keyCell != undefined && keyCell.indexOf(tagString) == 0 || keyCell === typeString){
-    //init myFieldType
-      myFieldType.mandatoryOSM = false;
-      myFieldType.mandatoryCompare = false;
-      myFieldType.compare = matchType.none;
-      var operationValues = operationCell.split(delimiterString);
-      for (j=0;j<operationValues.length;j++){
-      
-        switch (operationValues[j].split(matchTypeDelimiter)[0])
-        {
-          case inString:
-            myFieldType.operationType = operationType.osmin;
-            break;
-          case osmString:
-            if(myFieldType.operationType != operationType.osmin){
-              myFieldType.operationType = operationType.osmtag;
-            }
-            break;
-          case anchorString:
-            myFieldType.mandatoryCompare = true;
-            myFieldType.compare = getMatchType(operationValues[j]);
-            break;
-          case osmString:
-            myFieldType.mandatoryOSM = true;
-            break;
-          case matchString:
-            myFieldType.compare = getMatchType(operationValues[j]);
-            break;
-        }
-      }
-    }
-    
-    if (keyCell != undefined && keyCell.indexOf(tagString) == 0){
-      myFieldType.key = keyCell.substr(tagString.length, keyCell.length);
-     if (valueCell === anyString){
-          myFieldType.anyValue = true;
-        } else {
-          myFieldType.anyValue = false;
-          if (typeof valueCell === 'string'){
-            myFieldType.value = valueCell.split(delimiterString);
-          } else if (typeof valueCell === 'number'){
-            myFieldType.value = new Array();
-            myFieldType.value.push(valueCell);
-          }
-        }
-    } else if (keyCell != undefined && keyCell === typeString) {
-      myFieldType.operationType = operationType.osmtype;
-      myFieldType.elementType = valueCell.split(delimiterString);
-    } else if (keyCell != undefined && keyCell === nearString) {
-      myFieldType.operationType = operationType.osmnear;
-      myFieldType.distance = parseFloat(valueCell);
-    } else {
-      cn = i;
-
-      fieldTypes.pop();
-      break;
-    }
-  }
-
-  return fieldTypes;
-}
-
-function createOverpassQuery(fieldTypes) {
+function createOverpassQuery(fieldTypes, forUser) {
   var oquerry = "";
   var oquerryUrl = "http://overpass-api.de/api/interpreter?data=";
   var oquerryHeader = "[out:json];";
@@ -227,7 +203,7 @@ function createOverpassQuery(fieldTypes) {
       newArea.values=fieldTypes[i].value;
       oquerryAreas.push(newArea);
     }
-    if (fieldTypes[i].operationType == operationType.osmtag) {
+    if (fieldTypes[i].operationType == operationType.osmtag && fieldTypes[i].mandatoryOSM == true) {
       oquerryTags = oquerryTags.concat("[\"", fieldTypes[i].key, "\"~\"", fieldTypes[i].value.join("|"), "\"]");
     }
   }
@@ -243,10 +219,14 @@ function createOverpassQuery(fieldTypes) {
       var areaQueryPart = "area[\"".concat(oquerryAreas[i].key, "\"=\"",
         oquerryAreas[i].values[j], "\"]->.a;");
         //sheetDebug.appendRow([areaQueryPart]);
-        var queryString = oquerryUrl.concat(encodeURIComponent(
-        oquerryHeader.concat(areaQueryPart,"(",oquerry.replace("way[", "way(area.a)[").replace("node[", "node(area.a)["), ");out meta center;")));
-        var atticQueryString = oquerryUrl.concat(encodeURIComponent(
-        oquerryHeader.concat(areaQueryPart,"(",oquerry.replace("way[", "way(area.a)[").replace("node[", "node(area.a)["), ");out meta center;")));
+      var newHeader = oquerryHeader.concat(areaQueryPart,"(",oquerry.replace("way[", "way(area.a)[").replace("node[", "node(area.a)[").replace("relation[", "relation(area.a)["), ");out meta center;");
+      if (forUser){  
+      var queryString = oquerryUrl.concat(newHeader);
+      }else{
+        var queryString = oquerryUrl.concat(encodeURIComponent(newHeader));
+      }
+        //var atticQueryString = oquerryUrl.concat(encodeURIComponent(
+        //oquerryHeader.concat(areaQueryPart,"(",oquerry.replace("way[", "way(area.a)[").replace("node[", "node(area.a)[").replace("relation[", "relation(area.a)["), ");out meta center;")));
       var myQuery = new queryObject(queryString, oquerryAreas[i].key, oquerryAreas[i].values[j]);
         //sheetDebug.appendRow([oquerryHeader.concat("(",oquerry.replace("way[", "way(area.a)[").replace("node[", "node(area.a)["), ");out ids tags center;")]);
 
@@ -258,6 +238,12 @@ function createOverpassQuery(fieldTypes) {
   //for (i=0;i<oquerrys.length;i++){sheetDebug.appendRow([oquerrys[i].queryString,oquerrys[i].areaTagKey,oquerrys[i].areaTagValue]);}
 
   return oquerrys;
+
+}
+
+function getOverpassQuery(){
+  var ft = recognizeFieldTypes(getOutsideSheet());
+  return createOverpassQuery(ft, true);
 
 }
 
